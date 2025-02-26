@@ -7,6 +7,7 @@ import dotenv from 'dotenv'; // 导入 dotenv 模块
 import { URL } from 'url'; // 导入 URL 模块
 import { handleSpecialWebsite } from '../specialHandlers'; // 导入 handleSpecialWebsite 模块
 import fetch from 'node-fetch';
+import { getCachedPage, updateCacheAsync } from '../utils/cacheUpdater'; // 导入缓存相关模块
 
 dotenv.config(); // 加载环境变量
 
@@ -67,6 +68,7 @@ export const readPage = async (req: Request, res: Response): Promise<void> => {
         }
       });
 
+      await updateCacheAsync(queryUrl as string, cleanedContent || '');
       console.log("Page read successfully");
       return;
     } else {
@@ -113,6 +115,7 @@ export const readPage = async (req: Request, res: Response): Promise<void> => {
       }
     });
 
+    await updateCacheAsync(queryUrl as string, cleanedContent || '');
     console.log("Page read successfully");
   } catch (error) {
     console.error(error);

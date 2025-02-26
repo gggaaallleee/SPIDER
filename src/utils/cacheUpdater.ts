@@ -1,3 +1,4 @@
+
 import NodeCache from 'node-cache';
 import { MongoClient } from 'mongodb';
 import crypto from 'crypto';
@@ -5,7 +6,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const cache = new NodeCache({ stdTTL: 3600 }); 
+const cache = new NodeCache({ stdTTL: parseInt(process.env.STD_TTL || '3600') });
 const mongoClient = new MongoClient(process.env.MONGODB_URI || 'mongodb://localhost:27017');
 const dbName = 'pageCache';
 const collectionName = 'pages';
@@ -18,7 +19,7 @@ const connectToMongo = async () => {
 const createTTLIndex = async () => {
   try {
     const db = await connectToMongo();
-    await db.collection(collectionName).createIndex({ "updatedAt": 1 }, { expireAfterSeconds: 9000 }); 
+    await db.collection(collectionName).createIndex({ "updatedAt": 1 }, { expireAfterSeconds: parseInt(process.env.EXPIRE_AFTER_SECONDS || '9000') });
     console.log("TTL index created successfully");
   } catch (error) {
     console.error("Error creating TTL index:", error);
