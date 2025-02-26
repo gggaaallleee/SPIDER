@@ -6,6 +6,8 @@ import { setupPage } from '../utils/setupPage'; // 导入 setupPage 模块
 import dotenv from 'dotenv'; // 导入 dotenv 模块
 import { URL } from 'url'; // 导入 URL 模块
 import { handleSpecialWebsite } from '../specialHandlers'; // 导入 handleSpecialWebsite 模块
+import fetch from 'node-fetch';
+
 dotenv.config(); // 加载环境变量
 
 const detectWebsites = process.env.DETECT_WEBSITES?.split(',') || [];
@@ -41,12 +43,45 @@ export const readPage = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
+    const response = await fetch(queryUrl as string, {
+      headers: {
+        'User-Agent': new UserAgent({ deviceCategory: 'desktop', platform: 'Linux x86_64' }).toString(),
+        'Referer': 'https://www.google.com/',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Connection': 'keep-alive',
+        'Cache-Control': 'no-cache'
+      }
+    });
+
+    if (response.ok) {
+      const content = await response.text();
+      const $ = cheerio.load(content);
+      const cleanedContent = $('body').html();
+
+      res.status(200).json({
+        status: 200,
+        data: {
+          title: $('title').text(),
+          content: cleanedContent
+        }
+      });
+
+      console.log("Page read successfully");
+      return;
+    } else {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('快速抓取页面时发生错误:', error);
+  }
+
+  try {
     const browser = await puppeteer.launch({ ignoreDefaultArgs: ["--enable-automation"], headless: true, pipe: true });
     const page = await browser.newPage();
 
     // 检测是否需要特殊处理
     if (typeof queryUrl === 'string' && detectWebsites.some(website => queryUrl.includes(website))) {
-      //如果包括zhuanlan.zhihu.com
       await setupPage(page);
     } else {
       const userAgent = new UserAgent({ deviceCategory: 'desktop', platform: 'Linux x86_64' });

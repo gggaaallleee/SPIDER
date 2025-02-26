@@ -4,6 +4,7 @@ import UserAgent from 'user-agents';
 import { setupPage } from './setupPage';
 import { getCachedPage, updateCacheAsync } from './cacheUpdater';
 import { handleSpecialWebsite } from '../specialHandlers';
+import fetch from 'node-fetch';
 
 interface CachedPage {
   url: string;
@@ -30,6 +31,38 @@ export const performDeepSearch = async (clusterInstance: Cluster, resultUrls: st
       console.error(`从缓存获取页面 ${searchUrl} 时发生错误:`, error);
       results.set(searchUrl, { url: searchUrl, error: (error as Error).message, crawlStatus: 'Failed' });
       return;
+    }
+
+    try {
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': new UserAgent({ deviceCategory: 'desktop', platform: 'Linux x86_64' }).toString(),
+          'Referer': 'https://www.google.com/',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Connection': 'keep-alive',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (response.ok) {
+        const content = await response.text();
+        const $ = cheerio.load(content);
+        const cleanedContent = $('body').html() || '';
+
+        const result = results.get(searchUrl);
+        if (result) {
+          result.content = cleanedContent;
+          result.crawlStatus = 'Success';
+        }
+
+        await updateCacheAsync(searchUrl, cleanedContent || '');
+        return;
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error(`快速抓取页面 ${searchUrl} 时发生错误:`, error);
     }
 
     try {
