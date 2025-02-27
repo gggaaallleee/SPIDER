@@ -78,7 +78,7 @@ export const search = async (req: Request, res: Response): Promise<void> => {
       const clusterInstance = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_CONTEXT,
         maxConcurrency: maxConcurrency,
-        puppeteerOptions: { ignoreDefaultArgs: ["--enable-automation"], headless: true, pipe: true }
+        puppeteerOptions: { ignoreDefaultArgs: ["--enable-automation"], headless: true, pipe: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] }
       });
 
       const sortedResults = await performDeepSearch(clusterInstance, resultUrls, results, strategies, detectWebsites, Number(pageCount));

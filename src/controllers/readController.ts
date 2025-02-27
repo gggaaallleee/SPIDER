@@ -79,7 +79,12 @@ export const readPage = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const browser = await puppeteer.launch({ ignoreDefaultArgs: ["--enable-automation"], headless: true, pipe: true });
+    const browser = await puppeteer.launch({ 
+      ignoreDefaultArgs: ["--enable-automation"], 
+      headless: true, 
+      pipe: true ,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
     const page = await browser.newPage();
 
     // 检测是否需要特殊处理
